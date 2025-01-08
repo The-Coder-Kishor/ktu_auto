@@ -6,33 +6,43 @@
     <title>CGPA Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
-    <div class="bg-white p-6 rounded shadow-md w-full max-w-2xl">
-        <h1 class="text-2xl font-bold text-center mb-4">CGPA Calculator</h1>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
+    <div class="container mx-auto p-4 max-w-6xl">
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h1 class="text-3xl font-bold text-center mb-6 text-indigo-800">Academic GPA Calculator</h1>
 
-        <!-- Course List -->
-        <div id="course-list" class="space-y-4"></div>
+            <div id="semesters-container" class="space-y-8">
+                <!-- Semesters will be added here -->
+            </div>
 
-        <!-- Add Course Button -->
-        <button id="add-course" class="bg-blue-500 text-white px-4 py-2 rounded mt-4">Add Course</button>
+            <div class="flex flex-col sm:flex-row gap-4 mt-6 justify-between">
+                <button id="add-semester" class="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-2 rounded-lg shadow-md transition-all duration-200 font-semibold">
+                    Add Semester
+                </button>
+                <button id="calculate-cgpa" class="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-2 rounded-lg shadow-md transition-all duration-200 font-semibold">
+                    Calculate CGPA
+                </button>
+            </div>
 
-        <!-- CGPA Display -->
-        <div class="mt-6">
-            <button id="calculate-cgpa" class="bg-green-500 text-white px-4 py-2 rounded">Calculate CGPA</button>
-            <p id="cgpa-result" class="mt-4 text-lg font-bold">CGPA: -</p>
-        </div>
+            <div class="mt-6 text-center">
+                <p id="cgpa-result" class="text-2xl font-bold text-indigo-800">CGPA: -</p>
+            </div>
 
-        <!-- Import/Export Buttons -->
-        <div class="flex space-x-4 mt-6">
-            <label class="bg-gray-200 text-black px-4 py-2 rounded cursor-pointer">
-                Import File
-                <input id="import-file" type="file" accept=".json" class="hidden">
-            </label>
-            <button id="export-file" class="bg-gray-500 text-white px-4 py-2 rounded">Export File</button>
+            <div class="flex flex-col sm:flex-row gap-4 mt-6 justify-center">
+                <label class="bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 px-6 py-2 rounded-lg cursor-pointer shadow-md transition-all duration-200 text-center">
+                    <span class="text-gray-700 font-semibold">Import Data</span>
+                    <input id="import-file" type="file" accept=".json" class="hidden">
+                </label>
+                <button id="export-file" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-6 py-2 rounded-lg shadow-md transition-all duration-200 font-semibold">
+                    Export Data
+                </button>
+            </div>
         </div>
     </div>
-
+    
+    <script src="courses.js"></script>
     <script>
+
         const gradeMapping = {
             'S': 10.00,
             'A+': 9.00,
@@ -47,127 +57,102 @@
             'LP': 4.00
         };
 
-        const courseList = document.getElementById('course-list');
-        const addCourseButton = document.getElementById('add-course');
-        const calculateCgpaButton = document.getElementById('calculate-cgpa');
-        const cgpaResult = document.getElementById('cgpa-result');
-        const importFileInput = document.getElementById('import-file');
-        const exportFileButton = document.getElementById('export-file');
-
-        // Predefined courses
-        const predefinedCourses = [
-            { code: 'MAT101', name: 'LINEAR ALGEBRA AND CALCULUS', credits: 4 },
-            { code: 'PHT101', name: 'ENGINEERING PHYSICS B', credits: 4 },
-            { code: 'CYT101', name: 'ENGINEERING CHEMISTRY', credits: 4 },
-            { code: 'EST100', name: 'ENGINEERING MECHANICS', credits: 3 },
-            { code: 'EST110', name: 'ENGINEERING GRAPHICS', credits: 3 },
-            { code: 'EST120', name: 'BASICS OF CIVIL & MECHANICAL ENGINEERING', credits: 4 },
-            { code: 'EST130', name: 'BASICS OF ELECTRICAL & ELECTRONICS ENGINEERING', credits: 4 },
-            { code: 'HUN101', name: 'LIFE SKILLS', credits: 0 },
-            { code: 'PHL120', name: 'ENGINEERING PHYSICS LAB', credits: 1 },
-            { code: 'CYL120', name: 'ENGINEERING CHEMISTRY LAB', credits: 1 },
-            { code: 'ESL120', name: 'CIVIL & MECHANICAL WORKSHOP', credits: 1 },
-            { code: 'ESL130', name: 'ELECTRICAL & ELECTRONICS WORKSHOP', credits: 1 },
-            { code: 'MAT102', name: 'VECTOR CALCULUS, DIFFERENTIAL EQUATIONS AND TRANSFORMS', credits: 4 },
-            { code: 'HUN102', name: 'PROFESSIONAL COMMUNICATION', credits: 0 },
-            { code: 'EST102', name: 'PROGRAMMING IN C', credits: 4 },
-            { code: 'MAT201', name: 'PARTIAL DIFFERENTIAL EQUATION AND COMPLEX ANALYSIS', credits: 4 },
-            { code: 'MUT201', name: 'FLUID MECHANICS AND MACHINERY', credits: 4 },
-            { code: 'MUT203', name: 'AUTOMOTIVE CHASSIS', credits: 4 },
-            { code: 'MET205', name: 'METALLURGY & MATERIAL SCIENCE', credits: 4 },
-            { code: 'EST200', name: 'DESIGN & ENGINEERING', credits: 2 },
-            { code: 'HUT200', name: 'PROFESSIONAL ETHICS', credits: 2 },
-            { code: 'MCN201', name: 'SUSTAINABLE ENGINEERING', credits: 0 },
-            { code: 'MEL201', name: 'COMPUTER AIDED MACHINE DRAWING', credits: 2 },
-            { code: 'MUL203', name: 'FM & HM LAB', credits: 2 },
-            { code: 'MUT281', name: 'FUNDAMENTALS OF AUTOMOBILE ENGINEERING', credits: 4 },
-            { code: 'MAT202', name: 'PROBABILITY, STATISTICS and NUMERICAL METHODS', credits: 4 },
-            { code: 'MET202', name: 'ENGINEERING THERMODYNAMICS', credits: 4 },
-            { code: 'MUT204', name: 'AUTO POWER PLANT', credits: 4 },
-            { code: 'MUT206', name: 'MECHANICS OF SOLIDS', credits: 4 },
-            { code: 'MCN202', name: 'CONSTITUTION OF INDIA', credits: 0 },
-            { code: 'MUL202', name: 'MATERIALS TESTING LAB', credits: 2 },
-            { code: 'MUL204', name: 'VEHICLE SYSTEMS LAB', credits: 2 },
-            { code: 'AUT282', name: 'AUTOMOTIVE CHASSIS AND ENGINE COMPONENTS', credits: 4 },
-            { code: 'MUT292', name: 'INCOMPRESSIBLE AND COMPRESSIBLE FLOWS', credits: 4 }
-        ];
-
-        // Render courses
-        function renderCourses(courses) {
-            courseList.innerHTML = '';
-            courses.forEach(course => addCourseEntry(course));
-        }
-
-        // Save courses to local storage
-        function saveToCache() {
-            const courses = Array.from(document.querySelectorAll('.course-entry')).map(course => ({
-                code: course.querySelector('.course-dropdown').value,
-                name: course.querySelector('.course-name').value,
-                credits: parseInt(course.querySelector('.course-credits').value, 10),
-                grade: course.querySelector('.course-grade').value
-            }));
-            localStorage.setItem('cgpaCourses', JSON.stringify(courses));
-        }
-
-        // Load courses from local storage
-        function loadFromCache() {
-            const cachedCourses = localStorage.getItem('cgpaCourses');
-            if (cachedCourses) {
-                renderCourses(JSON.parse(cachedCourses));
-            } else {
-                renderCourses([]);
-            }
-        }
-
-        // Add a course entry
-        function addCourseEntry(course = { code: '', name: '', credits: '', grade: '' }) {
-            const courseEntry = document.createElement('div');
-            courseEntry.className = 'course-entry flex items-center space-x-4';
-            courseEntry.innerHTML = `
-                <select class="course-dropdown border border-gray-300 rounded p-2 w-1/3">
-                    <option value="">Select Course</option>
-                    ${predefinedCourses.map(c => `<option value="${c.code}" ${course.code === c.code ? 'selected' : ''}>${c.name} (${c.code})</option>`).join('')}
-                </select>
-                <input type="text" value="${course.name}" placeholder="Course Name" class="course-name border border-gray-300 rounded p-2 w-1/3" readonly />
-                <input type="number" value="${course.credits}" placeholder="Credits" class="course-credits border border-gray-300 rounded p-2 w-1/6" readonly />
-                <select class="course-grade border border-gray-300 rounded p-2 w-1/6">
-                    <option value="">Select Grade</option>
-                    ${Object.keys(gradeMapping).map(grade => `<option value="${grade}" ${course.grade === grade ? 'selected' : ''}>${grade}</option>`).join('')}
-                </select>
-                <button class="remove-course bg-red-500 text-white px-3 py-1 rounded">Remove</button>
+        function createSemester(semesterData = { number: 1, courses: [] }) {
+            const semester = document.createElement('div');
+            semester.className = 'semester-container bg-gray-50 rounded-lg p-4';
+            semester.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-indigo-800">Semester ${semesterData.number}</h2>
+                    <div class="flex gap-4">
+                        <button class="add-course-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded-lg text-sm">Add Course</button>
+                        <button class="calculate-sgpa-btn bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-lg text-sm">Calculate SGPA</button>
+                        <button class="remove-semester-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm">×</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 bg-white rounded-lg">
+                        <thead>
+                            <tr class="bg-gradient-to-r from-indigo-500 to-blue-500">
+                                <th class="px-6 py-3 text-left text-white font-semibold">Course</th>
+                                <th class="px-6 py-3 text-left text-white font-semibold w-24">Credits</th>
+                                <th class="px-6 py-3 text-left text-white font-semibold w-32">Grade</th>
+                                <th class="px-6 py-3 w-16"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="course-list divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                <div class="mt-4 text-right">
+                    <p class="sgpa-result text-lg font-semibold text-indigo-800">SGPA: -</p>
+                </div>
             `;
-            courseList.appendChild(courseEntry);
 
-            // Handle course selection
-            const dropdown = courseEntry.querySelector('.course-dropdown');
-            const nameInput = courseEntry.querySelector('.course-name');
-            const creditsInput = courseEntry.querySelector('.course-credits');
-            dropdown.addEventListener('change', () => {
-                const selectedCourse = predefinedCourses.find(c => c.code === dropdown.value);
-                if (selectedCourse) {
-                    nameInput.value = selectedCourse.name;
-                    creditsInput.value = selectedCourse.credits;
-                } else {
-                    nameInput.value = '';
-                    creditsInput.value = '';
-                }
+            const courseList = semester.querySelector('.course-list');
+            semesterData.courses.forEach(course => addCourseEntry(courseList, course));
+
+            semester.querySelector('.add-course-btn').addEventListener('click', () => {
+                addCourseEntry(courseList);
             });
 
-            // Attach remove functionality
-            courseEntry.querySelector('.remove-course').addEventListener('click', () => {
-                courseEntry.remove();
+            semester.querySelector('.calculate-sgpa-btn').addEventListener('click', () => {
+                calculateSGPA(semester);
+            });
+
+            semester.querySelector('.remove-semester-btn').addEventListener('click', () => {
+                semester.remove();
                 saveToCache();
             });
 
-            // Save on changes
-            courseEntry.querySelectorAll('select, input').forEach(input => {
-                input.addEventListener('change', saveToCache);
-            });
+            return semester;
         }
 
-        // Calculate CGPA
-        calculateCgpaButton.addEventListener('click', () => {
-            const courses = document.querySelectorAll('.course-entry');
+        function addCourseEntry(courseList, course = { code: '', credits: '', grade: '' }) {
+            const row = document.createElement('tr');
+            row.className = 'course-entry hover:bg-gray-50 transition-colors duration-150';
+            row.innerHTML = `
+                <td class="px-6 py-3">
+                    <select class="course-dropdown w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">Select Course</option>
+                        ${predefinedCourses.map(c => `<option value="${c.code}" ${course.code === c.code ? 'selected' : ''}>${c.code} - ${c.name}</option>`).join('')}
+                    </select>
+                </td>
+                <td class="px-6 py-3">
+                    <input type="number" value="${course.credits}" class="course-credits w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" readonly />
+                </td>
+                <td class="px-6 py-3">
+                    <select class="course-grade w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">Grade</option>
+                        ${Object.keys(gradeMapping).map(grade => `<option value="${grade}" ${course.grade === grade ? 'selected' : ''}>${grade}</option>`).join('')}
+                    </select>
+                </td>
+                <td class="px-6 py-3">
+                    <button class="remove-course bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full shadow-md transition-colors duration-200 flex items-center justify-center">×</button>
+                </td>
+            `;
+
+            const dropdown = row.querySelector('.course-dropdown');
+            const creditsInput = row.querySelector('.course-credits');
+
+            dropdown.addEventListener('change', () => {
+                const selectedCourse = predefinedCourses.find(c => c.code === dropdown.value);
+                creditsInput.value = selectedCourse ? selectedCourse.credits : '';
+                saveToCache();
+            });
+
+            row.querySelector('.remove-course').addEventListener('click', () => {
+                row.remove();
+                saveToCache();
+            });
+
+            row.querySelectorAll('select, input').forEach(input => {
+                input.addEventListener('change', saveToCache);
+            });
+
+            courseList.appendChild(row);
+        }
+
+        function calculateSGPA(semester) {
+            const courses = semester.querySelectorAll('.course-entry');
             let totalCredits = 0;
             let totalPoints = 0;
 
@@ -180,46 +165,92 @@
                 totalPoints += gradeNumeric * credits;
             });
 
+            const sgpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '-';
+            semester.querySelector('.sgpa-result').textContent = `SGPA: ${sgpa}`;
+        }
+
+        function calculateCGPA() {
+            const semesters = document.querySelectorAll('.semester-container');
+            let totalCredits = 0;
+            let totalPoints = 0;
+
+            semesters.forEach(semester => {
+                semester.querySelectorAll('.course-entry').forEach(course => {
+                    const credits = parseFloat(course.querySelector('.course-credits').value) || 0;
+                    const grade = course.querySelector('.course-grade').value;
+                    const gradeNumeric = gradeMapping[grade] || 0;
+
+                    totalCredits += credits;
+                    totalPoints += gradeNumeric * credits;
+                });
+            });
+
             const cgpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '-';
-            cgpaResult.textContent = `CGPA: ${cgpa}`;
+            document.getElementById('cgpa-result').textContent = `CGPA: ${cgpa}`;
+        }
+
+        function saveToCache() {
+            const semesters = Array.from(document.querySelectorAll('.semester-container')).map((semester, index) => ({
+                number: index + 1,
+                courses: Array.from(semester.querySelectorAll('.course-entry')).map(course => ({
+                    code: course.querySelector('.course-dropdown').value,
+                    credits: course.querySelector('.course-credits').value,
+                    grade: course.querySelector('.course-grade').value
+                }))
+            }));
+            localStorage.setItem('academicData', JSON.stringify(semesters));
+        }
+
+        function loadFromCache() {
+            const cachedData = localStorage.getItem('academicData');
+            if (cachedData) {
+                const semesters = JSON.parse(cachedData);
+                semesters.forEach(semesterData => {
+                    const semester = createSemester(semesterData);
+                    document.getElementById('semesters-container').appendChild(semester);
+                });
+            }
+        }
+
+        document.getElementById('add-semester').addEventListener('click', () => {
+            const semesterCount = document.querySelectorAll('.semester-container').length;
+            const semester = createSemester({ number: semesterCount + 1, courses: [] });
+            document.getElementById('semesters-container').appendChild(semester);
+            saveToCache();
         });
 
-        // Export to JSON file
-        exportFileButton.addEventListener('click', () => {
-            const courses = Array.from(document.querySelectorAll('.course-entry')).map(course => ({
-                code: course.querySelector('.course-dropdown').value,
-                name: course.querySelector('.course-name').value,
-                credits: course.querySelector('.course-credits').value,
-                grade: course.querySelector('.course-grade').value
-            }));
-            const blob = new Blob([JSON.stringify(courses)], { type: 'application/json' });
+        document.getElementById('calculate-cgpa').addEventListener('click', calculateCGPA);
+
+        document.getElementById('export-file').addEventListener('click', () => {
+            const data = JSON.parse(localStorage.getItem('academicData') || '[]');
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'courses.json';
+            link.download = 'academic_data.json';
             link.click();
         });
 
-        // Import from JSON file
-        importFileInput.addEventListener('change', (event) => {
+        document.getElementById('import-file').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const data = JSON.parse(e.target.result);
-                    renderCourses(data);
+                    document.getElementById('semesters-container').innerHTML = '';
+                    data.forEach(semesterData => {
+                        const semester = createSemester(semesterData);
+                        document.getElementById('semesters-container').appendChild(semester);
+                    });
                     saveToCache();
                 };
                 reader.readAsText(file);
             }
         });
 
-        // Load courses on page load
         loadFromCache();
-
-        // Add initial empty course
-        addCourseButton.addEventListener('click', () => {
-            addCourseEntry();
-        });
+        if (document.querySelectorAll('.semester-container').length === 0) {
+            document.getElementById('add-semester').click();
+        }
     </script>
 </body>
 </html>
