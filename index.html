@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CGPA Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+    <div class="bg-white p-6 rounded shadow-md w-full max-w-2xl">
+        <h1 class="text-2xl font-bold text-center mb-4">CGPA Calculator</h1>
+
+        <!-- Course List -->
+        <div id="course-list" class="space-y-4"></div>
+
+        <!-- Add Course Button -->
+        <button id="add-course" class="bg-blue-500 text-white px-4 py-2 rounded mt-4">Add Course</button>
+
+        <!-- CGPA Display -->
+        <div class="mt-6">
+            <button id="calculate-cgpa" class="bg-green-500 text-white px-4 py-2 rounded">Calculate CGPA</button>
+            <p id="cgpa-result" class="mt-4 text-lg font-bold">CGPA: -</p>
+        </div>
+
+        <!-- Import/Export Buttons -->
+        <div class="flex space-x-4 mt-6">
+            <label class="bg-gray-200 text-black px-4 py-2 rounded cursor-pointer">
+                Import File
+                <input id="import-file" type="file" accept=".json" class="hidden">
+            </label>
+            <button id="export-file" class="bg-gray-500 text-white px-4 py-2 rounded">Export File</button>
+        </div>
+    </div>
+
+    <script>
+        const gradeMapping = {
+            'S': 10.00,
+            'A+': 9.00,
+            'A': 8.50,
+            'B+': 8.00,
+            'B': 7.50,
+            'C+': 7.00,
+            'C': 6.50,
+            'D': 6.00,
+            'P': 5.50,
+            'F': 0.00,
+            'LP': 4.00
+        };
+
+        const courseList = document.getElementById('course-list');
+        const addCourseButton = document.getElementById('add-course');
+        const calculateCgpaButton = document.getElementById('calculate-cgpa');
+        const cgpaResult = document.getElementById('cgpa-result');
+        const importFileInput = document.getElementById('import-file');
+        const exportFileButton = document.getElementById('export-file');
+
+        // Predefined courses
+        const predefinedCourses = [
+            { code: 'MAT101', name: 'LINEAR ALGEBRA AND CALCULUS', credits: 4 },
+            { code: 'PHT101', name: 'ENGINEERING PHYSICS B', credits: 4 },
+            { code: 'CYT101', name: 'ENGINEERING CHEMISTRY', credits: 4 },
+            { code: 'EST100', name: 'ENGINEERING MECHANICS', credits: 3 },
+            { code: 'EST110', name: 'ENGINEERING GRAPHICS', credits: 3 },
+            { code: 'EST120', name: 'BASICS OF CIVIL & MECHANICAL ENGINEERING', credits: 4 },
+            { code: 'EST130', name: 'BASICS OF ELECTRICAL & ELECTRONICS ENGINEERING', credits: 4 },
+            { code: 'HUN101', name: 'LIFE SKILLS', credits: 0 },
+            { code: 'PHL120', name: 'ENGINEERING PHYSICS LAB', credits: 1 },
+            { code: 'CYL120', name: 'ENGINEERING CHEMISTRY LAB', credits: 1 },
+            { code: 'ESL120', name: 'CIVIL & MECHANICAL WORKSHOP', credits: 1 },
+            { code: 'ESL130', name: 'ELECTRICAL & ELECTRONICS WORKSHOP', credits: 1 },
+            { code: 'MAT102', name: 'VECTOR CALCULUS, DIFFERENTIAL EQUATIONS AND TRANSFORMS', credits: 4 },
+            { code: 'HUN102', name: 'PROFESSIONAL COMMUNICATION', credits: 0 },
+            { code: 'EST102', name: 'PROGRAMMING IN C', credits: 4 },
+            { code: 'MAT201', name: 'PARTIAL DIFFERENTIAL EQUATION AND COMPLEX ANALYSIS', credits: 4 },
+            { code: 'MUT201', name: 'FLUID MECHANICS AND MACHINERY', credits: 4 },
+            { code: 'MUT203', name: 'AUTOMOTIVE CHASSIS', credits: 4 },
+            { code: 'MET205', name: 'METALLURGY & MATERIAL SCIENCE', credits: 4 },
+            { code: 'EST200', name: 'DESIGN & ENGINEERING', credits: 2 },
+            { code: 'HUT200', name: 'PROFESSIONAL ETHICS', credits: 2 },
+            { code: 'MCN201', name: 'SUSTAINABLE ENGINEERING', credits: 0 },
+            { code: 'MEL201', name: 'COMPUTER AIDED MACHINE DRAWING', credits: 2 },
+            { code: 'MUL203', name: 'FM & HM LAB', credits: 2 },
+            { code: 'MUT281', name: 'FUNDAMENTALS OF AUTOMOBILE ENGINEERING', credits: 4 },
+            { code: 'MAT202', name: 'PROBABILITY, STATISTICS and NUMERICAL METHODS', credits: 4 },
+            { code: 'MET202', name: 'ENGINEERING THERMODYNAMICS', credits: 4 },
+            { code: 'MUT204', name: 'AUTO POWER PLANT', credits: 4 },
+            { code: 'MUT206', name: 'MECHANICS OF SOLIDS', credits: 4 },
+            { code: 'MCN202', name: 'CONSTITUTION OF INDIA', credits: 0 },
+            { code: 'MUL202', name: 'MATERIALS TESTING LAB', credits: 2 },
+            { code: 'MUL204', name: 'VEHICLE SYSTEMS LAB', credits: 2 },
+            { code: 'AUT282', name: 'AUTOMOTIVE CHASSIS AND ENGINE COMPONENTS', credits: 4 },
+            { code: 'MUT292', name: 'INCOMPRESSIBLE AND COMPRESSIBLE FLOWS', credits: 4 }
+        ];
+
+        // Render courses
+        function renderCourses(courses) {
+            courseList.innerHTML = '';
+            courses.forEach(course => addCourseEntry(course));
+        }
+
+        // Save courses to local storage
+        function saveToCache() {
+            const courses = Array.from(document.querySelectorAll('.course-entry')).map(course => ({
+                code: course.querySelector('.course-dropdown').value,
+                name: course.querySelector('.course-name').value,
+                credits: parseInt(course.querySelector('.course-credits').value, 10),
+                grade: course.querySelector('.course-grade').value
+            }));
+            localStorage.setItem('cgpaCourses', JSON.stringify(courses));
+        }
+
+        // Load courses from local storage
+        function loadFromCache() {
+            const cachedCourses = localStorage.getItem('cgpaCourses');
+            if (cachedCourses) {
+                renderCourses(JSON.parse(cachedCourses));
+            } else {
+                renderCourses([]);
+            }
+        }
+
+        // Add a course entry
+        function addCourseEntry(course = { code: '', name: '', credits: '', grade: '' }) {
+            const courseEntry = document.createElement('div');
+            courseEntry.className = 'course-entry flex items-center space-x-4';
+            courseEntry.innerHTML = `
+                <select class="course-dropdown border border-gray-300 rounded p-2 w-1/3">
+                    <option value="">Select Course</option>
+                    ${predefinedCourses.map(c => `<option value="${c.code}" ${course.code === c.code ? 'selected' : ''}>${c.name} (${c.code})</option>`).join('')}
+                </select>
+                <input type="text" value="${course.name}" placeholder="Course Name" class="course-name border border-gray-300 rounded p-2 w-1/3" readonly />
+                <input type="number" value="${course.credits}" placeholder="Credits" class="course-credits border border-gray-300 rounded p-2 w-1/6" readonly />
+                <select class="course-grade border border-gray-300 rounded p-2 w-1/6">
+                    <option value="">Select Grade</option>
+                    ${Object.keys(gradeMapping).map(grade => `<option value="${grade}" ${course.grade === grade ? 'selected' : ''}>${grade}</option>`).join('')}
+                </select>
+                <button class="remove-course bg-red-500 text-white px-3 py-1 rounded">Remove</button>
+            `;
+            courseList.appendChild(courseEntry);
+
+            // Handle course selection
+            const dropdown = courseEntry.querySelector('.course-dropdown');
+            const nameInput = courseEntry.querySelector('.course-name');
+            const creditsInput = courseEntry.querySelector('.course-credits');
+            dropdown.addEventListener('change', () => {
+                const selectedCourse = predefinedCourses.find(c => c.code === dropdown.value);
+                if (selectedCourse) {
+                    nameInput.value = selectedCourse.name;
+                    creditsInput.value = selectedCourse.credits;
+                } else {
+                    nameInput.value = '';
+                    creditsInput.value = '';
+                }
+            });
+
+            // Attach remove functionality
+            courseEntry.querySelector('.remove-course').addEventListener('click', () => {
+                courseEntry.remove();
+                saveToCache();
+            });
+
+            // Save on changes
+            courseEntry.querySelectorAll('select, input').forEach(input => {
+                input.addEventListener('change', saveToCache);
+            });
+        }
+
+        // Calculate CGPA
+        calculateCgpaButton.addEventListener('click', () => {
+            const courses = document.querySelectorAll('.course-entry');
+            let totalCredits = 0;
+            let totalPoints = 0;
+
+            courses.forEach(course => {
+                const credits = parseFloat(course.querySelector('.course-credits').value) || 0;
+                const grade = course.querySelector('.course-grade').value;
+                const gradeNumeric = gradeMapping[grade] || 0;
+
+                totalCredits += credits;
+                totalPoints += gradeNumeric * credits;
+            });
+
+            const cgpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '-';
+            cgpaResult.textContent = `CGPA: ${cgpa}`;
+        });
+
+        // Export to JSON file
+        exportFileButton.addEventListener('click', () => {
+            const courses = Array.from(document.querySelectorAll('.course-entry')).map(course => ({
+                code: course.querySelector('.course-dropdown').value,
+                name: course.querySelector('.course-name').value,
+                credits: course.querySelector('.course-credits').value,
+                grade: course.querySelector('.course-grade').value
+            }));
+            const blob = new Blob([JSON.stringify(courses)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'courses.json';
+            link.click();
+        });
+
+        // Import from JSON file
+        importFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = JSON.parse(e.target.result);
+                    renderCourses(data);
+                    saveToCache();
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Load courses on page load
+        loadFromCache();
+
+        // Add initial empty course
+        addCourseButton.addEventListener('click', () => {
+            addCourseEntry();
+        });
+    </script>
+</body>
+</html>
